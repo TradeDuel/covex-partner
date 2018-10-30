@@ -1,0 +1,95 @@
+openapi: 3.0.0
+servers:
+# Added by API Auto Mocking Plugin
+  - description: SwaggerHub API Auto Mocking
+    url: https://virtserver.swaggerhub.com/TradeDuel/Covex-Referral-Coins/1.0.0
+  - description: Example Covex API endpoint
+    url: https://api.covex.io/coins
+
+info:
+  description: This is an example API hosted by Covex, for distributing Covex coins to partner vendors, and accepting coin credits for the partner's users.
+  version: "1.0.0"
+  title: Covex Partner Airdrop API
+  contact:
+    email: kevin@tradeduel.finance
+
+paths:
+  '/coins':
+    get:
+      summary: Get the partner's coin balances.
+      responses:
+        '401':
+          description: Unauthorized
+        '200':
+          description: Partner's account balance
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  partnerName:
+                    type: string
+                    description: Echo the partner name, as a sanity check.
+                  balances:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        coinCC:
+                          type: string
+                          description: Coin currency code
+                          example: CoVEX
+                        reserved:
+                          type: integer
+                          format: int64
+                          description: The total number of coins reserved for this partner to distribute to their users.
+                        consumed:
+                          type: integer
+                          format: int64
+                          description: The total number of coins this partner has issued to users, via the covex platform.
+      security:
+        - apiKey: []
+  '/coins/grant/{grantId}':
+    put:
+      summary: Grant coins to a user, and return the status of the grant transaction.
+      description: Idempotent endpoint for processing a grant-coins transaction, crediting a Covex user account with Covex coins reserved for this partner.
+      parameters:
+        - name: grantId
+          in: path
+          description: The grantId is a globally unique token identifying this grant transaction, for de-duping duplicate HTTP requests. The same grant transaction should never process more than once.
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                userEmail:
+                  type: string
+                  description: User's unique id is their verified email address. All-lowercase.
+                coins:
+                  type: integer
+                  format: int64
+                  description: Credit this many coins to the user's account.
+                coinCC:
+                  type: string
+                  description: Coin currency code
+                  example: CoVEX
+      responses:
+        '200':
+          description: Coins granted successfully. For idempotency, subsequent duplicate requests should also return the same 200 response, if the original succeeded.
+        '409':
+          description: Insufficient funds to credit user
+        '401':
+          description: Unauthorized
+      security:
+        - apiKey: []
+
+components:
+  securitySchemes:
+    apiKey:
+      type: apiKey
+      in: header
+      name: x-application-key
