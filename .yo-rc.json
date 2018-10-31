@@ -1,0 +1,11 @@
+{
+  "generator-openapi-repo": {
+    "importExistingSpec": true,
+    "importedSpec": "covex-partner-airdrop.yaml",
+    "name": "TradeDuel/Covex Partner Airdrop",
+    "repo": ":TradeDuel/covex-partner",
+    "splitSpec": false,
+    "samples": true,
+    "installSwaggerUI": true
+  }
+}

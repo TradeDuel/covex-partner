@@ -1,0 +1,102 @@
+swagger: '2.0'
+info:
+  title: Covex Partner Airdrop API
+  description: 'This is an example API hosted by Covex, for distributing Covex coins to partner vendors, and accepting coin credits for the partner''s users.'
+  version: 1.0.0
+host: api.covex.io
+basePath: /v1
+schemes:
+  - https
+securityDefinitions:
+  APIKeyHeader:
+    type: apiKey
+    in: header
+    name: x-api-key
+security:
+  - APIKeyHeader: []
+paths:
+  /coins:
+    get:
+      summary: Get the partner's coin balances.
+      produces:
+        - application/json
+      responses:
+        '200':
+          description: Partner's account balance
+          schema:
+            type: object
+            properties:
+              partnerName:
+                type: string
+                description: 'Echo the partner name, as a sanity check.'
+                example: TradeDuel
+              balances:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    coinCC:
+                      type: string
+                      description: Coin currency code
+                      example: CoVEX
+                    reserved:
+                      type: integer
+                      format: int64
+                      minimum: 0
+                      description: The total number of coins reserved for this partner to distribute to their users.
+                      example: 30000
+                    consumed:
+                      type: integer
+                      format: int64
+                      minimum: 0
+                      description: 'The total number of coins this partner has issued to users, via the covex platform.'
+                      example: 2500
+        '401':
+          description: Unauthorized
+  '/coins/grant/{grantId}':
+    put:
+      summary: 'Grant coins to a user, and return the status of the grant transaction.'
+      description: 'Idempotent endpoint for processing a grant-coins transaction, crediting a Covex user account with Covex coins reserved for this partner.'
+      consumes:
+        - application/json
+      produces:
+        - application/json
+      parameters:
+        - name: grantId
+          in: path
+          required: true
+          type: string
+          pattern: '^[a-zA-Z0-9]{5,50}$'
+          description: 'The grantId is a globally unique token identifying this grant transaction, for de-duping duplicate HTTP requests. The same grant transaction should never process more than once.'
+        - name: grant
+          in: body
+          required: true
+          schema:
+            type: object
+            required:
+              - userEmail
+              - coins
+              - coinCC
+            properties:
+              userEmail:
+                type: string
+                description: User's unique id is their verified email address. All-lowercase.
+                format: email
+                example: george@jetson.com
+              coins:
+                type: integer
+                format: int64
+                minimum: 1
+                description: Credit this many coins to the user's account.
+                example: 20
+              coinCC:
+                type: string
+                description: Coin currency code
+                example: CoVEX
+      responses:
+        '200':
+          description: 'Coins granted successfully. For idempotency, subsequent duplicate requests should also return the same 200 response, if the original succeeded.'
+        '401':
+          description: Unauthorized
+        '409':
+          description: Insufficient funds to credit user
